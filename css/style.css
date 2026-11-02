@@ -57,7 +57,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- HUD ---------- */
 .hud {
-  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
   width: min(1180px, calc(100% - 24px));
   display: flex; align-items: center; gap: 16px; justify-content: space-between;
   padding: 8px 14px; z-index: 40;
@@ -85,7 +85,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- HERO ---------- */
 .hero {
-  position: relative; min-height: 100svh; display: grid; place-items: center; overflow: hidden; isolation: isolate;
+  position: relative; min-height: min(100svh, 820px); display: grid; place-items: center; overflow: hidden; isolation: isolate;
   background: linear-gradient(180deg, #1a0f3d 0%, #4a1450 45%, #ff6a3d 85%, #ffb35c 100%);
 }
 .hero__rays {
@@ -165,8 +165,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .section__head.is-in h2 .en::after { width: calc(100% + 20px); }
 .section__head p { color: var(--ink-2); margin: 14px 0 0; }
 
-.reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s cubic-bezier(.2,.8,.2,1); }
-.reveal.is-in { opacity: 1; transform: none; }
+.reveal { transition: transform .7s cubic-bezier(.2,.8,.2,1); }
 .hero .reveal { animation: fadeUp .8s 1.6s both; opacity: 1; transform: none; transition: none; }
 
 /* JRPG window */
