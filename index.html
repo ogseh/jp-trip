@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Japan Quest 2027 · 日本冒険譚</title>
+  <meta name="description" content="Our trip planner for Japan: Osaka, Himeji, Kobe, Takamatsu, Kyoto and Tokyo — Jan 21 to Feb 6, 2027." />
+  <meta name="theme-color" content="#0b1030" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230b1030'/><circle cx='32' cy='32' r='16' fill='%23ff3b30'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <canvas id="fx" aria-hidden="true"></canvas>
+
+  <!-- ===== HUD NAV ===== -->
+  <header class="hud" id="hud">
+    <a class="hud__logo" href="#top"><span class="hud__sun"></span>JAPAN QUEST</a>
+    <nav class="hud__nav" aria-label="Sections">
+      <a href="#map"><span>地図</span>Map</a>
+      <a href="#stages"><span>宿</span>Stages</a>
+      <a href="#quests"><span>冒険</span>Quests</a>
+      <a href="#treasury"><span>金庫</span>Treasury</a>
+    </nav>
+    <div class="hud__hp" title="Days until departure">
+      <span class="hud__hp-label">HP</span>
+      <span class="hud__hp-bar"><i id="hpFill"></i></span>
+      <span id="countdownMini"></span>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="top">
+    <div class="hero__rays" aria-hidden="true"></div>
+    <div class="hero__sun" aria-hidden="true"></div>
+    <svg class="hero__fuji" viewBox="0 0 1440 400" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="fujiG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2a2f6b"/><stop offset="1" stop-color="#0b1030"/>
+        </linearGradient>
+      </defs>
+      <path d="M0 400 L0 330 L180 300 L340 320 L520 250 L640 120 L700 70 L740 70 L800 120 L920 250 L1100 300 L1260 280 L1440 320 L1440 400Z" fill="url(#fujiG)"/>
+      <path d="M640 120 L700 70 L740 70 L800 120 L770 112 L752 130 L730 108 L708 128 L690 110 L665 125Z" fill="#f5f0e6"/>
+    </svg>
+    <svg class="hero__hills" viewBox="0 0 1440 200" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 200 L0 120 Q120 60 260 110 T560 100 T880 120 T1200 90 T1440 110 L1440 200Z" fill="#0b1030"/>
+    </svg>
+    <div class="hero__speed" aria-hidden="true"></div>
+
+    <div class="hero__content">
+      <p class="hero__kicker reveal">✦ A 17-DAY ADVENTURE ✦ 2027 ✦</p>
+      <h1 class="hero__title">
+        <span class="hero__jp" aria-hidden="true">日本冒険譚</span>
+        <span class="hero__en" data-text="JAPAN QUEST">JAPAN QUEST</span>
+      </h1>
+      <p class="hero__sub reveal">Jan 21 — Feb 6 · Osaka · Himeji · Kobe · Takamatsu · Kyoto · Tokyo</p>
+      <div class="countdown reveal" id="countdown" aria-live="polite"></div>
+      <a class="btn-start" href="#map"><span class="blink">▶</span> PRESS START</a>
+    </div>
+  </section>
+
+  <!-- ===== MAP ===== -->
+  <section class="section" id="map">
+    <div class="section__head reveal">
+      <span class="section__num">01</span>
+      <h2><span class="jp">旅路</span><span class="en">World Map</span></h2>
+      <p>Day-by-day route. Pick a day, hit play, or use ← → keys.</p>
+    </div>
+
+    <div class="days" id="dayStrip" role="tablist" aria-label="Days"></div>
+
+    <div class="map-wrap reveal">
+      <div class="map-frame">
+        <svg id="mapSvg" viewBox="0 0 1000 700" role="img" aria-label="Map of Japan with the trip route"></svg>
+        <div class="map-ui">
+          <button class="pixbtn" id="prevDay" aria-label="Previous day">◀</button>
+          <button class="pixbtn pixbtn--play" id="playBtn" aria-label="Play route">▶ PLAY</button>
+          <button class="pixbtn" id="nextDay" aria-label="Next day">▶</button>
+          <button class="pixbtn" id="overviewBtn" aria-label="Show whole route">◎ ALL</button>
+        </div>
+        <div class="map-compass" aria-hidden="true">北<br/>▲</div>
+      </div>
+
+      <article class="dialog" id="dayPanel" aria-live="polite"></article>
+    </div>
+  </section>
+
+  <!-- ===== STAGES ===== -->
+  <section class="section" id="stages">
+    <div class="section__head reveal">
+      <span class="section__num">02</span>
+      <h2><span class="jp">宿と移動</span><span class="en">Stages</span></h2>
+      <p>Where we sleep and how we get there, city by city.</p>
+    </div>
+    <div class="stages" id="stageList"></div>
+  </section>
+
+  <!-- ===== QUESTS ===== -->
+  <section class="section" id="quests">
+    <div class="section__head reveal">
+      <span class="section__num">03</span>
+      <h2><span class="jp">冒険の書</span><span class="en">Quest Log</span></h2>
+      <p>Planned activities. Tick them off as we clear them (saved on your device).</p>
+    </div>
+    <div class="filters" id="questFilters" role="group" aria-label="Filter by category"></div>
+    <div class="quest-progress"><span id="questCount"></span><span class="xpbar"><i id="xpFill"></i></span></div>
+    <div class="quests" id="questList"></div>
+  </section>
+
+  <!-- ===== TREASURY ===== -->
+  <section class="section" id="treasury">
+    <div class="section__head reveal">
+      <span class="section__num">04</span>
+      <h2><span class="jp">金庫</span><span class="en">Treasury</span></h2>
+      <p>Estimated costs per person, excluding international flights. Edit in <code>js/data.js</code>.</p>
+    </div>
+
+    <div class="treasury">
+      <div class="window controls">
+        <label class="ctl">
+          <span>Party size</span>
+          <span class="stepper">
+            <button type="button" id="partyMinus" aria-label="Fewer travellers">−</button>
+            <output id="partySize">4</output>
+            <button type="button" id="partyPlus" aria-label="More travellers">+</button>
+          </span>
+        </label>
+        <div class="ctl">
+          <span>Currency</span>
+          <div class="seg" id="currencySeg" role="radiogroup" aria-label="Currency"></div>
+        </div>
+        <label class="ctl ctl--toggle">
+          <input type="checkbox" id="passToggle" />
+          <span class="switch" aria-hidden="true"></span>
+          <span>Use Kansai Wide Area Pass<small id="passNote"></small></span>
+        </label>
+      </div>
+
+      <div class="window totals">
+        <div class="total-big">
+          <span class="label">Per person</span>
+          <span class="value" id="totalPP">—</span>
+        </div>
+        <div class="total-big total-big--sub">
+          <span class="label">Whole party</span>
+          <span class="value" id="totalGroup">—</span>
+        </div>
+        <div class="total-big total-big--sub">
+          <span class="label">Per day</span>
+          <span class="value" id="totalDay">—</span>
+        </div>
+      </div>
+
+      <div class="window chart-win">
+        <h3>By category</h3>
+        <div class="stackbar" id="catBar"></div>
+        <ul class="legend" id="catLegend"></ul>
+        <h3>By city</h3>
+        <div class="citybars" id="cityBars"></div>
+        <div class="tooltip" id="tooltip" role="status"></div>
+      </div>
+
+      <details class="window ledger">
+        <summary>▶ Full ledger (table)</summary>
+        <div class="ledger__scroll"><table id="ledger"></table></div>
+      </details>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>おつかれさま！ Made for the party · Rough estimates, check before booking.</p>
+    <p class="footer__pix">GAME OVER? <a href="#top">CONTINUE ▶</a></p>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
