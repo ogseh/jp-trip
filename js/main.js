@@ -135,11 +135,12 @@ const observeReveal = (root = document) => root.querySelectorAll('.reveal, .sect
 //  MAP
 // ============================================================================
 const LABEL_POS = { // [dx, dy, anchor] in overview units
-  osaka: [10, 20, 'start'], kobe: [-8, 22, 'end'], nara: [14, 4, 'start'], kyoto: [8, -12, 'start'],
+  osaka: [10, 20, 'start'], kobe: [-8, 22, 'end'], kyoto: [8, -12, 'start'],
   himeji: [-10, -10, 'end'], takamatsu: [0, 26, 'middle'], naoshima: [-12, 0, 'end'], teshima: [6, -12, 'start'],
-  tokyo: [14, 4, 'start'], fuji: [0, 24, 'middle'],
+  ghibli: [0, 26, 'middle'], tokyo: [12, -6, 'start'], yokohama: [12, 8, 'start'], kamakura: [-10, 18, 'end'],
+  kawaguchiko: [0, -14, 'middle'],
 };
-const MINOR = new Set(['naoshima', 'teshima', 'nara', 'kobe', 'fuji']);
+const MINOR = new Set(['naoshima', 'teshima', 'kobe', 'kawaguchiko', 'yokohama', 'kamakura']);
 const usedPlaces = [...new Set(DAYS.flatMap((d) => d.route))];
 
 function curve(a, b, bend = 0.2) {
@@ -273,7 +274,10 @@ const map = (() => {
       const tt = Math.max(0, Math.min(1, (now - t0 - delay) / travelDur));
       const et = ease(tt);
       if (dayPath) {
-        pathEl.style.strokeDashoffset = len * (1 - et);
+        // non-scaling stroke => dashes are in screen pixels, so scale by the current zoom
+        const k = frame.clientWidth / cam[2] * 1.5;
+        pathEl.style.strokeDasharray = et >= 1 ? 'none' : `${len * k} ${len * k}`;
+        pathEl.style.strokeDashoffset = len * k * (1 - et);
         const p = pathEl.getPointAtLength(len * et); spritePos = [p.x, p.y];
       } else {
         const end = onDone.end; spritePos = [fromSprite[0] + (end[0] - fromSprite[0]) * et, fromSprite[1] + (end[1] - fromSprite[1]) * et];
@@ -416,15 +420,15 @@ document.addEventListener('keydown', (e) => {
       }
       const d = DAYS[i]; const st = stageById[dayStage[i]]; const P = PLACES[st.place];
       const places = d.route.filter((p, k) => p !== d.route[k - 1]);
-      const moves = i > 0 && d.sleep !== DAYS[i - 1]?.sleep;
-      const trip = !moves && places.length > 1 ? PLACES[places.find((p) => p !== st.place)]?.name : null;
+      const moves = i > 0 && !!d.sleep && d.sleep !== DAYS[i - 1]?.sleep;
+      const trip = !moves && places.length > 1 ? places.filter((p) => p !== st.place).map((p) => PLACES[p].name).join(' & ') : null;
       const where = moves && i > 0 ? places.map((p) => PLACES[p].name).join(' → ') : (trip ? `Day trip: ${trip}` : P.name);
       const cell = h('button', {
         type: 'button', class: 'cal-cell is-trip' + (moves ? ' is-move' : '') + (key === todayIso ? ' is-today' : ''),
         style: `--c:${P.color}`, 'aria-label': `${fmtDate(dt)}, day ${i + 1}: ${d.title}, ${where}`,
       }, `<span class="cal-top"><span class="cal-num">${dnum}</span><span class="cal-day">Day ${i + 1}</span></span>
         <span class="cal-city"><b>${P.jp}</b> ${moves && i > 0 ? '🚄 ' : ''}${where}</span>
-        <span class="cal-title">${d.title}</span>
+        <span class="cal-title">${d.title}</span>${d.event ? `<span class="cal-event">${d.event}</span>` : ''}
         <span class="cal-acts">${d.activities.map((a) => CATEGORIES[a.cat]?.icon || '✦').join(' ')}</span>`);
       cell.addEventListener('click', () => { stopPlay(); select(i); $('#map').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' }); });
       grid.appendChild(cell);
@@ -576,7 +580,7 @@ function ledgerItems() {
     (d.extraTransport || []).forEach((t) => items.push({ stage: dayStage[i], cat: 'transport', label: t.label, amount: t.price, struck: usePass && t.pass === 'kansaiWide' }));
     d.activities.forEach((a) => { if (a.price) items.push({ stage: dayStage[i], cat: a.cat === 'food' ? 'food' : 'activities', label: a.name, amount: a.price }); });
   });
-  if (usePass) items.push({ stage: 'himeji', cat: 'transport', label: `🎟 ${PASSES.kansaiWide.name}`, amount: PASSES.kansaiWide.price });
+  if (usePass) items.push({ stage: PASSES.kansaiWide.stage, cat: 'transport', label: `🎟 ${PASSES.kansaiWide.name}`, amount: PASSES.kansaiWide.price });
   // Kansai Wide Area Pass savings note
   return items;
 }

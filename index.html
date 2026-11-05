@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Quest 2027 · 日本冒険譚</title>
-  <meta name="description" content="Our trip planner for Japan: Osaka, Himeji, Kobe, Takamatsu, Kyoto and Tokyo — Jan 21 to Feb 6, 2027." />
+  <meta name="description" content="Our trip planner for Japan: Osaka, Himeji, Kobe, Takamatsu, Kyoto, Ghibli Park and Tokyo — Jan 21 to Feb 6, 2027." />
   <meta name="theme-color" content="#0b1030" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230b1030'/><circle cx='32' cy='32' r='16' fill='%23ff3b30'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,8 +19,8 @@
   <header class="hud" id="hud">
     <a class="hud__logo" href="#top"><span class="hud__sun"></span>JAPAN QUEST</a>
     <nav class="hud__nav" aria-label="Sections">
-      <a href="#map"><span>地図</span>Map</a>
       <a href="#calendar"><span>暦</span>Calendar</a>
+      <a href="#map"><span>地図</span>Map</a>
       <a href="#stages"><span>宿</span>Stages</a>
       <a href="#quests"><span>冒険</span>Quests</a>
       <a href="#treasury"><span>金庫</span>Treasury</a>
@@ -56,16 +56,27 @@
         <span class="hero__jp" aria-hidden="true">日本冒険譚</span>
         <span class="hero__en" data-text="JAPAN QUEST">JAPAN QUEST</span>
       </h1>
-      <p class="hero__sub reveal">Jan 21 — Feb 6 · Osaka · Himeji · Kobe · Takamatsu · Kyoto · Tokyo</p>
+      <p class="hero__sub reveal">Jan 21 — Feb 6 · Osaka · Himeji · Kobe · Takamatsu · Kyoto · Ghibli Park · Tokyo</p>
       <div class="countdown reveal" id="countdown" aria-live="polite"></div>
-      <a class="btn-start" href="#map"><span class="blink">▶</span> PRESS START</a>
+      <a class="btn-start" href="#calendar"><span class="blink">▶</span> PRESS START</a>
     </div>
+  </section>
+
+  <!-- ===== CALENDAR ===== -->
+  <section class="section" id="calendar">
+    <div class="section__head reveal">
+      <span class="section__num">01</span>
+      <h2><span class="jp">暦</span><span class="en">Calendar</span></h2>
+      <p>The whole trip at a glance. Tap a day to open it on the map.</p>
+    </div>
+    <div class="cal-legend" id="calLegend"></div>
+    <div class="months" id="calMonths"></div>
   </section>
 
   <!-- ===== MAP ===== -->
   <section class="section" id="map">
     <div class="section__head reveal">
-      <span class="section__num">01</span>
+      <span class="section__num">02</span>
       <h2><span class="jp">旅路</span><span class="en">World Map</span></h2>
       <p>Day-by-day route. Pick a day, hit play, or use ← → keys.</p>
     </div>
@@ -86,17 +97,6 @@
 
       <article class="dialog" id="dayPanel" aria-live="polite"></article>
     </div>
-  </section>
-
-  <!-- ===== CALENDAR ===== -->
-  <section class="section" id="calendar">
-    <div class="section__head reveal">
-      <span class="section__num">02</span>
-      <h2><span class="jp">暦</span><span class="en">Calendar</span></h2>
-      <p>The whole trip at a glance. Tap a day to open it on the map.</p>
-    </div>
-    <div class="cal-legend" id="calLegend"></div>
-    <div class="months" id="calMonths"></div>
   </section>
 
   <!-- ===== STAGES ===== -->
