@@ -45,7 +45,7 @@ const fx = (() => {
   let W = 0, H = 0, dpr = 1; const parts = []; const bursts = [];
   const resize = () => { dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
   resize(); addEventListener('resize', resize);
-  const N = REDUCED ? 0 : Math.round(Math.min(70, W / 18));
+  const N = REDUCED ? 0 : Math.round(Math.min(28, W / 45));
   const spawn = (top) => ({
     x: Math.random() * W, y: top ? -20 : Math.random() * H,
     r: 1 + Math.random() * 3, vy: 0.3 + Math.random() * 0.8, vx: -0.3 + Math.random() * 0.6,
@@ -245,7 +245,7 @@ const map = (() => {
     for (const [id, c] of Object.entries(cityEls)) {
       const [dx, dy, anchor] = LABEL_POS[id] || [10, 4, 'start'];
       c.t.setAttribute('x', c.x + dx * z * 0.85); c.t.setAttribute('y', c.y + dy * z * 0.85);
-      c.t.setAttribute('text-anchor', anchor); c.t.style.fontSize = `${13 * z}px`; c.t.style.strokeWidth = `${3.5 * z}px`;
+      c.t.setAttribute('text-anchor', anchor); c.t.style.fontSize = `${13 * z}px`; c.t.style.strokeWidth = `${2.5 * z}px`;
       c.dot.setAttribute('r', 5 * z);
       // minor places only get a label when zoomed in or visited today
       c.t.style.display = MINOR.has(id) && z > 0.75 && !c.g.classList.contains('is-today') ? 'none' : '';
@@ -385,6 +385,59 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') { stopPlay(); select(currentDay + 1); }
   if (e.key === 'ArrowLeft') { stopPlay(); select(currentDay - 1); }
 });
+
+// ============================================================================
+//  CALENDAR — month grids starting on Monday
+// ============================================================================
+(() => {
+  const wrap = $('#calMonths'); const legend = $('#calLegend');
+  const first = parseDate(TRIP.start), last = parseDate(DAYS.at(-1).date);
+  const byDate = Object.fromEntries(DAYS.map((d, i) => [d.date, i]));
+  const iso = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  const todayIso = iso(new Date());
+  const HEAD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const HEAD_JP = ['月', '火', '水', '木', '金', '土', '日'];
+  legend.innerHTML = STAGES.map((st) => `<span style="--c:${placeColor(st.place)}"><i></i>${PLACES[st.place].name} · ${st.nights} night${st.nights > 1 ? 's' : ''}</span>`).join('')
+    + '<span class="cal-legend__move">🚄 travel day</span>';
+  for (let m = new Date(first.getFullYear(), first.getMonth(), 1); m <= last; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+    const month = h('div', { class: 'month' });
+    month.innerHTML = `<h3 class="month__name">${m.toLocaleString('en-US', { month: 'long' })} <span>${m.getFullYear()} · ${m.getMonth() + 1}月</span></h3>`;
+    const grid = h('div', { class: 'month__grid', role: 'grid' });
+    HEAD.forEach((d, k) => grid.appendChild(h('div', { class: 'month__dow' + (k > 4 ? ' is-weekend' : '') }, `${d}<span>${HEAD_JP[k]}</span>`)));
+    const lead = (m.getDay() + 6) % 7;
+    for (let k = 0; k < lead; k++) grid.appendChild(h('div', { class: 'cal-cell is-pad' }));
+    const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    for (let dnum = 1; dnum <= daysInMonth; dnum++) {
+      const dt = new Date(m.getFullYear(), m.getMonth(), dnum); const key = iso(dt); const i = byDate[key];
+      const weekend = dt.getDay() === 0 || dt.getDay() === 6;
+      if (i === undefined) {
+        grid.appendChild(h('div', { class: 'cal-cell is-off' + (weekend ? ' is-weekend' : '') + (key === todayIso ? ' is-today' : '') }, `<span class="cal-num">${dnum}</span>`));
+        continue;
+      }
+      const d = DAYS[i]; const st = stageById[dayStage[i]]; const P = PLACES[st.place];
+      const places = d.route.filter((p, k) => p !== d.route[k - 1]);
+      const moves = i > 0 && d.sleep !== DAYS[i - 1]?.sleep;
+      const trip = !moves && places.length > 1 ? PLACES[places.find((p) => p !== st.place)]?.name : null;
+      const where = moves && i > 0 ? places.map((p) => PLACES[p].name).join(' → ') : (trip ? `Day trip: ${trip}` : P.name);
+      const cell = h('button', {
+        type: 'button', class: 'cal-cell is-trip' + (moves ? ' is-move' : '') + (key === todayIso ? ' is-today' : ''),
+        style: `--c:${P.color}`, 'aria-label': `${fmtDate(dt)}, day ${i + 1}: ${d.title}, ${where}`,
+      }, `<span class="cal-top"><span class="cal-num">${dnum}</span><span class="cal-day">Day ${i + 1}</span></span>
+        <span class="cal-city"><b>${P.jp}</b> ${moves && i > 0 ? '🚄 ' : ''}${where}</span>
+        <span class="cal-title">${d.title}</span>
+        <span class="cal-acts">${d.activities.map((a) => CATEGORIES[a.cat]?.icon || '✦').join(' ')}</span>`);
+      cell.addEventListener('click', () => { stopPlay(); select(i); $('#map').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' }); });
+      grid.appendChild(cell);
+    }
+    // shrink weeks that have no trip days, so the trip weeks stand out
+    const cells = [...grid.children].slice(7);
+    for (let k = 0; k < cells.length; k += 7) {
+      const week = cells.slice(k, k + 7);
+      if (!week.some((c) => c.classList.contains('is-trip'))) week.forEach((c) => c.classList.add('is-quiet'));
+    }
+    month.appendChild(grid); wrap.appendChild(month);
+  }
+})();
 
 // ============================================================================
 //  STAGES

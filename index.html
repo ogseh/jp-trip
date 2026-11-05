@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230b1030'/><circle cx='32' cy='32' r='16' fill='%23ff3b30'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -20,6 +20,7 @@
     <a class="hud__logo" href="#top"><span class="hud__sun"></span>JAPAN QUEST</a>
     <nav class="hud__nav" aria-label="Sections">
       <a href="#map"><span>地図</span>Map</a>
+      <a href="#calendar"><span>暦</span>Calendar</a>
       <a href="#stages"><span>宿</span>Stages</a>
       <a href="#quests"><span>冒険</span>Quests</a>
       <a href="#treasury"><span>金庫</span>Treasury</a>
@@ -87,10 +88,21 @@
     </div>
   </section>
 
+  <!-- ===== CALENDAR ===== -->
+  <section class="section" id="calendar">
+    <div class="section__head reveal">
+      <span class="section__num">02</span>
+      <h2><span class="jp">暦</span><span class="en">Calendar</span></h2>
+      <p>The whole trip at a glance. Tap a day to open it on the map.</p>
+    </div>
+    <div class="cal-legend" id="calLegend"></div>
+    <div class="months" id="calMonths"></div>
+  </section>
+
   <!-- ===== STAGES ===== -->
   <section class="section" id="stages">
     <div class="section__head reveal">
-      <span class="section__num">02</span>
+      <span class="section__num">03</span>
       <h2><span class="jp">宿と移動</span><span class="en">Stages</span></h2>
       <p>Where we sleep and how we get there, city by city.</p>
     </div>
@@ -100,7 +112,7 @@
   <!-- ===== QUESTS ===== -->
   <section class="section" id="quests">
     <div class="section__head reveal">
-      <span class="section__num">03</span>
+      <span class="section__num">04</span>
       <h2><span class="jp">冒険の書</span><span class="en">Quest Log</span></h2>
       <p>Planned activities. Tick them off as we clear them (saved on your device).</p>
     </div>
@@ -112,7 +124,7 @@
   <!-- ===== TREASURY ===== -->
   <section class="section" id="treasury">
     <div class="section__head reveal">
-      <span class="section__num">04</span>
+      <span class="section__num">05</span>
       <h2><span class="jp">金庫</span><span class="en">Treasury</span></h2>
       <p>Estimated costs per person, excluding international flights. Edit in <code>js/data.js</code>.</p>
     </div>
