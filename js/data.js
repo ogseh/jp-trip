@@ -34,9 +34,7 @@ export const PLACES = {
 
 // ---------------------------------------------------------------------------
 //  STAGES — where we sleep. Accommodation + how we get there + local transport.
-//  pricePerNight is per person (assuming shared rooms).
-//  status: 'idea' | 'shortlist' | 'booked'
-//  foodPerDay = baseline (konbini, ramen, coffee). Planned meals are extra.
+//  Accommodation options for each stage live in stays.js (voted on in the Stages section).
 // ---------------------------------------------------------------------------
 export const STAGES = [
   {
@@ -45,14 +43,9 @@ export const STAGES = [
     tagline: 'The Kitchen of Japan',
     boss: 'Dōtonbori after dark',
     stats: { food: 5, culture: 3, nightlife: 5, nature: 1, chaos: 5 },
-    stay: {
-      name: 'TBD — apartment or hotel', area: 'Namba / Shinsaibashi',
-      why: 'Walkable to Dōtonbori, direct Nankai train from Kansai Airport, easy JR to Himeji.',
-      pricePerNight: 7000, status: 'idea', link: '',
-    },
-    arrive: { mode: 'train', label: 'KIX → Namba (Nankai Rapi:t)', duration: '40 min', price: 1450 },
+    stay: { area: 'Namba / Shinsaibashi', why: 'Walkable to Dōtonbori, direct Nankai train from Kansai Airport, easy JR to Himeji.' },
+    arrive: { mode: 'train', label: 'KIX → Namba (Nankai Rapi:t)', duration: '40 min', price: 1490 },
     local: { label: 'ICOCA card · Midōsuji subway line', perDay: 800 },
-    foodPerDay: 3000,
   },
   {
     id: 'takamatsu', place: 'takamatsu', stage: 2,
@@ -60,14 +53,9 @@ export const STAGES = [
     tagline: 'Gateway to the Art Islands',
     boss: 'Make your own udon',
     stats: { food: 4, culture: 4, nightlife: 2, nature: 5, chaos: 1 },
-    stay: {
-      name: 'TBD — hotel by the port', area: 'Sunport / Kawaramachi',
-      why: 'Ferries to Naoshima & Teshima leave from Takamatsu Port, 5 min from JR station.',
-      pricePerNight: 6000, status: 'idea', link: '',
-    },
+    stay: { area: 'Sunport / Kawaramachi', why: 'Ferries to Naoshima & Teshima leave from Takamatsu Port, 5 min from JR station.' },
     arrive: { mode: 'train', label: 'Kobe → Okayama (Shinkansen) → Takamatsu (Marine Liner)', duration: '1 h 45', price: 6400, pass: 'kansaiWide' },
     local: { label: 'Kotoden trains · ferries · rental bikes', perDay: 500 },
-    foodPerDay: 3000,
   },
   {
     id: 'kyoto', place: 'kyoto', stage: 3,
@@ -75,14 +63,9 @@ export const STAGES = [
     tagline: 'One Night in the Old Capital',
     boss: 'Fushimi Inari at dawn',
     stats: { food: 4, culture: 5, nightlife: 2, nature: 4, chaos: 2 },
-    stay: {
-      name: 'TBD — ryokan or hotel', area: 'Near Kyoto Station',
-      why: 'Only one night, so stay close to the Shinkansen and the JR Nara line to Fushimi Inari.',
-      pricePerNight: 11000, status: 'idea', link: '',
-    },
-    arrive: { mode: 'train', label: 'Kotohira → Okayama (JR) → Kyoto (Shinkansen)', duration: '2 h 30', price: 9000, pass: 'kansaiWide' },
+    stay: { area: 'Near Kyoto Station', why: 'Only one night, so stay close to the Shinkansen and the JR Nara line to Fushimi Inari.' },
+    arrive: { mode: 'train', label: 'Takamatsu → Okayama (Marine Liner) → Kyoto (Shinkansen)', duration: '2 h', price: 8700, pass: 'kansaiWide' },
     local: { label: 'JR + city bus', perDay: 800 },
-    foodPerDay: 3000,
   },
   {
     id: 'tokyo', place: 'tokyo', stage: 4,
@@ -90,14 +73,9 @@ export const STAGES = [
     tagline: 'Neon Final Dungeon',
     boss: 'Shibuya Scramble at midnight',
     stats: { food: 5, culture: 4, nightlife: 5, nature: 2, chaos: 5 },
-    stay: {
-      name: 'TBD — hotel', area: 'Shinjuku / Asakusa / Ueno',
-      why: 'Shinjuku for nightlife and the Fuji buses; Asakusa/Ueno for cheaper, cosier vibes.',
-      pricePerNight: 8000, status: 'idea', link: '',
-    },
-    arrive: { mode: 'shinkansen', label: 'Kyoto → Nagoya → Tokyo (Shinkansen, stopping for Ghibli Park)', duration: '35 min + 1 h 40', price: 17200 },
+    stay: { area: 'Shinjuku / Asakusa / Ueno', why: 'Shinjuku for nightlife and the Fuji buses; Asakusa/Ueno for cheaper, cosier vibes.' },
+    arrive: { mode: 'shinkansen', label: 'Kyoto → Nagoya → Tokyo (Shinkansen, stopping for Ghibli Park)', duration: '35 min + 1 h 40', price: 16470 },
     local: { label: 'Suica card · JR Yamanote + Metro', perDay: 1000 },
-    foodPerDay: 3500,
   },
 ];
 
@@ -107,10 +85,29 @@ export const PASSES = {
     name: 'Kansai Wide Area Pass (5 days)',
     price: 12000,
     stage: 'takamatsu', // where it shows up in the ledger
-    covers: 'Jan 26 – Jan 30 · Himeji, Kobe, Takamatsu, Kotohira, Kyoto',
+    covers: 'Jan 26 – Jan 30 · Himeji, Kobe, Takamatsu, Kyoto',
     link: 'https://www.westjr.co.jp/global/en/ticket/pass/kansai_wide/',
   },
+  tokyoSubway: {
+    name: 'Tokyo Subway Ticket (72 h)',
+    price: 2000,
+    stage: 'tokyo',
+    replacesDays: 3, // replaces 3 days of pay-as-you-go Tokyo transit
+    covers: 'Jan 31, Feb 2, Feb 3 · all Metro + Toei lines',
+    link: 'https://www.tokyometro.jp/en/ticket/value/travel/index.html',
+  },
 };
+
+// Ways to make the plan cheaper. Shown in the Treasury. "save" is ¥ per person (rough).
+export const SAVERS = [
+  { title: 'Kansai Wide Area Pass', save: 'pass', text: '¥12,000 for 5 days from Jan 26. Covers Osaka ⇄ Himeji, Kobe, the Shinkansen to Okayama, the Marine Liner to Takamatsu and the ride on to Kyoto. Pick it up at Osaka Station; it is also sold online.', link: 'https://www.westjr.co.jp/global/en/ticket/pass/kansai_wide/' },
+  { title: 'Tokyo Subway Ticket (72 h)', save: 'subway', text: '¥2,000 for 72 hours of every Metro and Toei line. Start it on Jan 31 morning to cover the three city days (Jan 31, Feb 2, Feb 3 until the morning). Passport needed. Day trips use JR, so pay those with Suica.', link: 'https://www.tokyometro.jp/en/ticket/value/travel/index.html' },
+  { title: 'Rapi:t digital ticket from KIX', save: 190, text: 'The Rapi:t to Namba is ¥1,490 at the counter, about ¥1,300 as a digital ticket bought ahead. The regular Nankai Airport Express needs no surcharge and is only about 10 minutes slower.' },
+  { title: 'One Kyoto → Tokyo base ticket with a Nagoya stop', save: null, text: 'Buying Kyoto→Nagoya and Nagoya→Tokyo as two full tickets costs about ¥2,000 more than Kyoto→Tokyo. At a JR ticket office, ask for a Kyoto→Tokyo base-fare ticket (you may stop over in Nagoya) plus a Shinkansen express ticket for each leg. Check the price at the counter.' },
+  { title: 'Skip the nationwide JR Pass', save: null, text: 'The 7-day Japan Rail Pass costs about ¥50,000. All the long rides in this plan add up to far less, so regional passes and single tickets win.' },
+  { title: 'Kawaguchiko by highway bus', save: null, text: 'The Shinjuku ⇄ Kawaguchiko bus (about ¥2,200 each way) is the cheapest way to Fuji. Book seats ahead; winter weekdays still sell out.' },
+  { title: 'Luggage on Ghibli day', save: null, text: 'Forwarding a suitcase Kyoto → Tokyo costs about ¥2,000–3,000 per bag and arrives the next day. Coin lockers at Nagoya Station (¥700–1,000) are cheaper if your Tokyo hotel takes you that evening anyway.' },
+];
 
 // ---------------------------------------------------------------------------
 //  DAYS — the day-by-day itinerary.
@@ -202,10 +199,10 @@ export const DAYS = [
     ],
   },
   {
-    date: '2027-01-29', route: ['takamatsu', 'kotohira', 'kyoto'], sleep: 'kyoto',
+    date: '2027-01-29', route: ['takamatsu', 'kotohira', 'takamatsu', 'kyoto'], sleep: 'kyoto',
     title: 'Udon School, then Kyoto',
     text: 'Make (and stomp) our own sanuki udon at a cooking class in Kotohira, then ride on to Kyoto for an evening walk through Gion.',
-    extraTransport: [{ label: 'Takamatsu → Kotohira (JR)', price: 870, pass: 'kansaiWide' }],
+    extraTransport: [{ label: 'Takamatsu ⇄ Kotohira (Kotoden, not covered by JR passes)', price: 1460 }],
     activities: [
       { name: 'Udon-making class', cat: 'food', price: 2000, time: 'AM', note: 'e.g. Nakano Udon School. Book ahead; check the price.' },
       { name: 'Konpira-san shrine steps (optional)', cat: 'culture', price: 0, time: 'Midday' },

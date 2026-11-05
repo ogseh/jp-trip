@@ -1,4 +1,6 @@
-import { TRIP, PLACES, STAGES, PASSES, DAYS, CATEGORIES } from './data.js';
+import { TRIP, PLACES, STAGES, PASSES, DAYS, CATEGORIES, SAVERS } from './data.js';
+import { STAYS } from './stays.js';
+import { votes, PLAYER_IDS } from './votes.js';
 import { JAPAN_PATH, CITY_XY } from './japan-geo.js';
 
 // ============================================================================
@@ -30,8 +32,26 @@ const store = {
   set(k, v) { try { localStorage.setItem('jq:' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 let currency = store.get('currency', 'JPY');
-let party = store.get('party', TRIP.defaultPartySize);
-let usePass = store.get('pass', false);
+const party = TRIP.defaultPartySize;
+let useSubway = store.get('subway', true);
+// --- stays & votes -----------------------------------------------------------
+const playerName = (pid) => votes.get()[pid]?.name || pid.toUpperCase();
+function tally(city) {
+  const counts = {}; const by = {};
+  for (const pid of PLAYER_IDS) {
+    const opt = votes.get()[pid]?.stays?.[city];
+    if (opt) { counts[opt] = (counts[opt] || 0) + 1; (by[opt] ||= []).push(pid); }
+  }
+  return { counts, by };
+}
+// Top-voted option (ties go to the earlier option in the list); first option if nobody voted.
+function chosenStay(city) {
+  const opts = STAYS[city] || []; const { counts } = tally(city);
+  let best = null, bestN = 0;
+  opts.forEach((o) => { if ((counts[o.id] || 0) > bestN) { best = o; bestN = counts[o.id]; } });
+  return best ? { opt: best, votes: bestN } : { opt: opts[0], votes: 0 };
+}
+let usePass = store.get('pass', true);
 const stageById = Object.fromEntries(STAGES.map((st) => [st.id, st]));
 // Which stage a day "belongs" to (for costs/colours): where we sleep, else where we slept last.
 const dayStage = DAYS.map((d, i) => d.sleep || DAYS[i - 1]?.sleep || STAGES[0].id);
@@ -360,7 +380,7 @@ function select(i, { scrollChip = true } = {}) {
         <span class="p">${a.price ? yen(a.price) : 'free'}</span></li>`).join('')}
     </ul>
     <div class="dialog__meta">
-      <div><span class="k">SLEEP</span><span>${sleep ? `${PLACES[sleep.place].jp} ${sleep.stay.name} <span style="color:var(--ink-3)">(${sleep.stay.area})</span>` : '✈ Flight home'}</span></div>
+      <div><span class="k">SLEEP</span><span>${sleep ? `${PLACES[sleep.place].jp} ${chosenStay(sleep.id).opt?.name || 'TBD'} <span style="color:var(--ink-3)">(${chosenStay(sleep.id).votes ? 'top vote' : 'no votes yet'})</span>` : '✈ Flight home'}</span></div>
       <div><span class="k">MOVE</span><span>${transport.length ? transport.join('<br>') : 'Local transit / walking'}</span></div>
       <div><span class="k">SPEND</span><span>${yen(dayCost)} planned activities / person</span></div>
     </div>`;
@@ -391,7 +411,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================================================
-//  CALENDAR — month grids starting on Monday
+//  CALENDAR — weeks of the trip, starting on Monday
 // ============================================================================
 (() => {
   const wrap = $('#calMonths'); const legend = $('#calLegend');
@@ -403,44 +423,37 @@ document.addEventListener('keydown', (e) => {
   const HEAD_JP = ['月', '火', '水', '木', '金', '土', '日'];
   legend.innerHTML = STAGES.map((st) => `<span style="--c:${placeColor(st.place)}"><i></i>${PLACES[st.place].name} · ${st.nights} night${st.nights > 1 ? 's' : ''}</span>`).join('')
     + '<span class="cal-legend__move">🚄 travel day</span>';
-  for (let m = new Date(first.getFullYear(), first.getMonth(), 1); m <= last; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
-    const month = h('div', { class: 'month' });
-    month.innerHTML = `<h3 class="month__name">${m.toLocaleString('en-US', { month: 'long' })} <span>${m.getFullYear()} · ${m.getMonth() + 1}月</span></h3>`;
-    const grid = h('div', { class: 'month__grid', role: 'grid' });
-    HEAD.forEach((d, k) => grid.appendChild(h('div', { class: 'month__dow' + (k > 4 ? ' is-weekend' : '') }, `${d}<span>${HEAD_JP[k]}</span>`)));
-    const lead = (m.getDay() + 6) % 7;
-    for (let k = 0; k < lead; k++) grid.appendChild(h('div', { class: 'cal-cell is-pad' }));
-    const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
-    for (let dnum = 1; dnum <= daysInMonth; dnum++) {
-      const dt = new Date(m.getFullYear(), m.getMonth(), dnum); const key = iso(dt); const i = byDate[key];
-      const weekend = dt.getDay() === 0 || dt.getDay() === 6;
-      if (i === undefined) {
-        grid.appendChild(h('div', { class: 'cal-cell is-off' + (weekend ? ' is-weekend' : '') + (key === todayIso ? ' is-today' : '') }, `<span class="cal-num">${dnum}</span>`));
-        continue;
-      }
-      const d = DAYS[i]; const st = stageById[dayStage[i]]; const P = PLACES[st.place];
-      const places = d.route.filter((p, k) => p !== d.route[k - 1]);
-      const moves = i > 0 && !!d.sleep && d.sleep !== DAYS[i - 1]?.sleep;
-      const trip = !moves && places.length > 1 ? places.filter((p) => p !== st.place).map((p) => PLACES[p].name).join(' & ') : null;
-      const where = moves && i > 0 ? places.map((p) => PLACES[p].name).join(' → ') : (trip ? `Day trip: ${trip}` : P.name);
-      const cell = h('button', {
-        type: 'button', class: 'cal-cell is-trip' + (moves ? ' is-move' : '') + (key === todayIso ? ' is-today' : ''),
-        style: `--c:${P.color}`, 'aria-label': `${fmtDate(dt)}, day ${i + 1}: ${d.title}, ${where}`,
-      }, `<span class="cal-top"><span class="cal-num">${dnum}</span><span class="cal-day">Day ${i + 1}</span></span>
-        <span class="cal-city"><b>${P.jp}</b> ${moves && i > 0 ? '🚄 ' : ''}${where}</span>
-        <span class="cal-title">${d.title}</span>${d.event ? `<span class="cal-event">${d.event}</span>` : ''}
-        <span class="cal-acts">${d.activities.map((a) => CATEGORIES[a.cat]?.icon || '✦').join(' ')}</span>`);
-      cell.addEventListener('click', () => { stopPlay(); select(i); $('#map').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' }); });
-      grid.appendChild(cell);
+  // one continuous grid: Monday of the arrival week → Sunday of the departure week
+  const gridStart = addDays(first, -((first.getDay() + 6) % 7));
+  const gridEnd = addDays(last, (7 - last.getDay()) % 7);
+  const month = h('div', { class: 'month' });
+  month.innerHTML = `<h3 class="month__name">${fmtDate(gridStart)} – ${fmtDate(gridEnd)} <span>${gridStart.getFullYear()}</span></h3>`;
+  const grid = h('div', { class: 'month__grid', role: 'grid' });
+  HEAD.forEach((d, k) => grid.appendChild(h('div', { class: 'month__dow' + (k > 4 ? ' is-weekend' : '') }, `${d}<span>${HEAD_JP[k]}</span>`)));
+  for (let dt = gridStart; dt <= gridEnd; dt = addDays(dt, 1)) {
+    const dnum = dt.getDate(); const key = iso(dt); const i = byDate[key];
+    const weekend = dt.getDay() === 0 || dt.getDay() === 6;
+    const numLabel = dnum === 1 || +dt === +gridStart ? `<span class="cal-mon">${MONTHS[dt.getMonth()]}</span>${dnum}` : dnum;
+    if (i === undefined) {
+      grid.appendChild(h('div', { class: 'cal-cell is-off' + (weekend ? ' is-weekend' : '') + (key === todayIso ? ' is-today' : '') }, `<span class="cal-num">${numLabel}</span>`));
+      continue;
     }
-    // shrink weeks that have no trip days, so the trip weeks stand out
-    const cells = [...grid.children].slice(7);
-    for (let k = 0; k < cells.length; k += 7) {
-      const week = cells.slice(k, k + 7);
-      if (!week.some((c) => c.classList.contains('is-trip'))) week.forEach((c) => c.classList.add('is-quiet'));
-    }
-    month.appendChild(grid); wrap.appendChild(month);
+    const d = DAYS[i]; const st = stageById[dayStage[i]]; const P = PLACES[st.place];
+    const places = d.route.filter((p, k) => p !== d.route[k - 1]);
+    const moves = i > 0 && !!d.sleep && d.sleep !== DAYS[i - 1]?.sleep;
+    const trip = !moves && places.length > 1 ? places.filter((p) => p !== st.place).map((p) => PLACES[p].name).join(' & ') : null;
+    const where = moves ? places.map((p) => PLACES[p].name).join(' → ') : (trip ? `Day trip: ${trip}` : P.name);
+    const cell = h('button', {
+      type: 'button', class: 'cal-cell is-trip' + (moves ? ' is-move' : '') + (key === todayIso ? ' is-today' : ''),
+      style: `--c:${P.color}`, 'aria-label': `${fmtDate(dt)}, day ${i + 1}: ${d.title}, ${where}`,
+    }, `<span class="cal-top"><span class="cal-num">${numLabel}</span><span class="cal-day">Day ${i + 1}</span></span>
+      <span class="cal-city"><b>${P.jp}</b> ${moves ? '🚄 ' : ''}${where}</span>
+      <span class="cal-title">${d.title}</span>${d.event ? `<span class="cal-event">${d.event}</span>` : ''}
+      <span class="cal-acts">${d.activities.map((a) => CATEGORIES[a.cat]?.icon || '✦').join(' ')}</span>`);
+    cell.addEventListener('click', () => { stopPlay(); select(i); $('#map').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' }); });
+    grid.appendChild(cell);
   }
+  month.appendChild(grid); wrap.appendChild(month);
 })();
 
 // ============================================================================
@@ -461,14 +474,9 @@ document.addEventListener('keydown', (e) => {
         <p class="stage__tag">${st.tagline}</p>
         <div class="stage__dates"><span class="pill">${fmtDate(inD)} → ${fmtDate(outD)}</span><span class="pill">${st.nights} night${st.nights > 1 ? 's' : ''}</span></div>
       </div>
+      <div class="stage__cols">
       <div class="stage__body">
-        <div class="stage__box">
-          <h4><span>🏯 ACCOMMODATION</span><span class="pill pill--status pill--${st.stay.status}">${st.stay.status}</span></h4>
-          <p><b>${st.stay.link ? `<a href="${st.stay.link}" target="_blank" rel="noopener">${st.stay.name}</a>` : st.stay.name}</b></p>
-          <p class="muted">📍 ${st.stay.area}</p>
-          <p class="muted">${st.stay.why}</p>
-          <p class="price">≈ ${fmtMoney(st.stay.pricePerNight)} / night / person · <span data-money="${st.stay.pricePerNight * st.nights}">${fmtMoney(st.stay.pricePerNight * st.nights)}</span> total</p>
-        </div>
+        <p class="muted stage__hint">📍 Aim for ${st.stay.area}. ${st.stay.why}</p>
         <div class="stage__box">
           <h4><span>🚄 GETTING THERE</span></h4>
           <p class="transit-line"><span class="ico">${st.arrive.mode === 'shinkansen' ? '🚅' : '🚃'}</span><span>${st.arrive.label}</span></p>
@@ -482,16 +490,9 @@ document.addEventListener('keydown', (e) => {
         </div>
         <div class="boss"><b>BOSS</b> ${st.boss}</div>
         <div class="stats">${statRows}</div>
+      </div>
+      <div class="stays" data-city="${st.id}"><h4 class="stays__h">🏯 Where to stay · vote</h4><div class="stays__list"></div></div>
       </div>`);
-    // holo tilt
-    if (!REDUCED) {
-      card.addEventListener('pointermove', (e) => {
-        const r = card.getBoundingClientRect(); const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-        card.style.transform = `perspective(900px) rotateY(${(px - 0.5) * 8}deg) rotateX(${(0.5 - py) * 8}deg) translateY(-4px)`;
-        card.style.setProperty('--mx', `${px * 100}%`); card.style.setProperty('--my', `${py * 100}%`);
-      });
-      card.addEventListener('pointerleave', () => { card.style.transform = ''; });
-    }
     list.appendChild(card);
   });
 })();
@@ -553,6 +554,56 @@ document.addEventListener('keydown', (e) => {
   progress();
 })();
 
+
+function renderParty() {
+  const wrap = $('#partyNames'); if (!wrap) return;
+  if (!wrap.children.length) {
+    PLAYER_IDS.forEach((pid, k) => {
+      const lab = h('label', { class: 'nameplate', for: `name-${pid}` }, `<span class="seal seal--on" style="--r:${(k - 1.5) * 6}deg">${pid.toUpperCase()}</span>`);
+      const inp = h('input', { id: `name-${pid}`, type: 'text', maxlength: '24', placeholder: `Name for ${pid.toUpperCase()}`, autocomplete: 'off' });
+      inp.addEventListener('change', () => votes.setName(pid, inp.value.trim()));
+      lab.appendChild(inp); wrap.appendChild(lab);
+    });
+  }
+  PLAYER_IDS.forEach((pid) => { const inp = $(`#name-${pid}`); if (document.activeElement !== inp) inp.value = votes.get()[pid]?.name || ''; });
+  const shared = votes.backend() === 'shared';
+  $('#voteSync').textContent = shared ? '● Votes are shared with everyone' : '○ Votes are saved on this device only';
+  $('#voteSync').classList.toggle('is-shared', shared);
+}
+
+function renderStays() {
+  document.querySelectorAll('.stays').forEach((box) => {
+    const city = box.dataset.city; const st = stageById[city]; const opts = STAYS[city] || [];
+    const { counts, by } = tally(city); const top = chosenStay(city);
+    const listEl = $('.stays__list', box);
+    listEl.innerHTML = opts.map((o) => {
+      const n = counts[o.id] || 0; const lead = top.votes > 0 && top.opt.id === o.id;
+      const seals = PLAYER_IDS.map((pid, k) => {
+        const on = (by[o.id] || []).includes(pid);
+        return `<button type="button" class="seal${on ? ' seal--on' : ''}" style="--r:${(k - 1.5) * 6}deg" data-pid="${pid}" data-opt="${o.id}" aria-pressed="${on}" title="${playerName(pid)}${on ? ' (stamped)' : ''}">${escapeHtml(playerName(pid)).slice(0, 3)}</button>`;
+      }).join('');
+      return `<article class="opt${lead ? ' is-lead' : ''}">
+        <div class="opt__top"><span class="opt__type opt__type--${o.type}">${o.typeLabel}</span>${lead ? `<span class="opt__lead">★ Top pick · ${n} vote${n > 1 ? 's' : ''}</span>` : ''}</div>
+        <h5 class="opt__name"><a href="${o.url}" target="_blank" rel="noopener">${o.name}</a></h5>
+        <p class="opt__setup">${o.setup} · ${o.area}</p>
+        <p class="opt__why">${o.why}</p>
+        <p class="opt__cav">${o.caveats}</p>
+        <div class="opt__foot">
+          <span class="opt__price"><b data-money="${o.pricePerNight}">${fmtMoney(o.pricePerNight)}</b> / person / night · <span data-money="${o.pricePerNight * st.nights}">${fmtMoney(o.pricePerNight * st.nights)}</span> for ${st.nights} night${st.nights > 1 ? 's' : ''}</span>
+          <span class="seals" role="group" aria-label="Votes for ${escapeHtml(o.name)}">${seals}</span>
+        </div>
+      </article>`;
+    }).join('');
+  });
+}
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.seal[data-opt]'); if (!b) return;
+  const city = b.closest('.stays').dataset.city;
+  if (b.getAttribute('aria-pressed') !== 'true') { const r = b.getBoundingClientRect(); fx.burst(r.left + r.width / 2, r.top + r.height / 2, 14); }
+  votes.toggleStay(b.dataset.pid, city, b.dataset.opt);
+});
+
 // ============================================================================
 //  TREASURY
 // ============================================================================
@@ -562,25 +613,24 @@ function fmtMoney(yenAmount) {
   return sym + Math.round(v).toLocaleString('en-US');
 }
 const CAT_COST = {
-  lodging: { label: 'Lodging', color: 'var(--c-lodging)' },
+  lodging: { label: 'Accommodation', color: 'var(--c-lodging)' },
   transport: { label: 'Transport', color: 'var(--c-transport)' },
-  activities: { label: 'Activities', color: 'var(--c-activities)' },
-  food: { label: 'Food', color: 'var(--c-food)' },
 };
 function ledgerItems() {
   const items = []; // {stage, cat, label, amount, struck}
   STAGES.forEach((st) => {
-    items.push({ stage: st.id, cat: 'lodging', label: `${st.stay.name} · ${st.nights} nights × ${fmtMoney(st.stay.pricePerNight)}`, amount: st.stay.pricePerNight * st.nights });
+    const { opt, votes: nv } = chosenStay(st.id);
+    if (opt) items.push({ stage: st.id, cat: 'lodging', label: `${opt.name} (${nv ? `top vote, ${nv}` : 'no votes yet'}) · ${st.nights} nights × ${fmtMoney(opt.pricePerNight)}`, amount: opt.pricePerNight * st.nights });
     items.push({ stage: st.id, cat: 'transport', label: st.arrive.label, amount: st.arrive.price, struck: usePass && st.arrive.pass === 'kansaiWide' });
-    const n = dayStage.filter((x) => x === st.id).length;
+    let n = dayStage.filter((x) => x === st.id).length;
+    if (useSubway && st.id === PASSES.tokyoSubway.stage) n -= PASSES.tokyoSubway.replacesDays;
     items.push({ stage: st.id, cat: 'transport', label: `Local transit · ${n} days × ${fmtMoney(st.local.perDay)}`, amount: st.local.perDay * n });
-    items.push({ stage: st.id, cat: 'food', label: `Daily food baseline · ${n} days × ${fmtMoney(st.foodPerDay)}`, amount: st.foodPerDay * n });
   });
   DAYS.forEach((d, i) => {
     (d.extraTransport || []).forEach((t) => items.push({ stage: dayStage[i], cat: 'transport', label: t.label, amount: t.price, struck: usePass && t.pass === 'kansaiWide' }));
-    d.activities.forEach((a) => { if (a.price) items.push({ stage: dayStage[i], cat: a.cat === 'food' ? 'food' : 'activities', label: a.name, amount: a.price }); });
   });
   if (usePass) items.push({ stage: PASSES.kansaiWide.stage, cat: 'transport', label: `🎟 ${PASSES.kansaiWide.name}`, amount: PASSES.kansaiWide.price });
+  if (useSubway) items.push({ stage: PASSES.tokyoSubway.stage, cat: 'transport', label: `🎟 ${PASSES.tokyoSubway.name}`, amount: PASSES.tokyoSubway.price });
   // Kansai Wide Area Pass savings note
   return items;
 }
@@ -612,9 +662,14 @@ function renderTreasury() {
   const total = items.reduce((a, b) => a + b.amount, 0);
   const nDays = DAYS.length;
   countTo($('#totalPP'), total); countTo($('#totalGroup'), total * party); countTo($('#totalDay'), total / nDays);
-  $('#partySize').textContent = party;
   const sv = passSavings();
   $('#passNote').textContent = `${PASSES.kansaiWide.covers} · ${sv > 0 ? `saves ≈ ${fmtMoney(sv)} / person` : `costs ${fmtMoney(-sv)} more`}`;
+  const ts = PASSES.tokyoSubway; const ssv = stageById[ts.stage].local.perDay * ts.replacesDays - ts.price;
+  $('#subwayNote').textContent = `${ts.covers} · ${ssv > 0 ? `saves ≈ ${fmtMoney(ssv)} / person` : `costs ${fmtMoney(-ssv)} more`}`;
+  $('#saverList').innerHTML = SAVERS.map((s) => {
+    const amt = s.save === 'pass' ? sv : s.save === 'subway' ? ssv : s.save;
+    return `<li><div class="saver__top"><b>${s.title}</b>${amt ? `<span class="saver__amt">saves ≈ ${fmtMoney(amt)} / person</span>` : ''}</div><p>${s.text}${s.link ? ` <a href="${s.link}" target="_blank" rel="noopener">Official page ↗</a>` : ''}</p></li>`;
+  }).join('');
 
   // category stacked bar
   const byCat = Object.fromEntries(Object.keys(CAT_COST).map((k) => [k, 0]));
@@ -655,7 +710,7 @@ function renderTreasury() {
 
   // ledger
   const all = ledgerItems();
-  let html = `<thead><tr><th>Item</th><th>Type</th><th class="num">Per person</th><th class="num">Party ×${party}</th></tr></thead><tbody>`;
+  let html = `<thead><tr><th>Item</th><th>Type</th><th class="num">Per person</th><th class="num">All ${party}</th></tr></thead><tbody>`;
   STAGES.forEach((st) => {
     html += `<tr class="group"><td colspan="4">STAGE ${st.stage} · ${PLACES[st.place].jp} ${PLACES[st.place].name}</td></tr>`;
     all.filter((it) => it.stage === st.id).forEach((it) => {
@@ -681,8 +736,8 @@ let byCatLive = {}, totalLive = 1;
     });
     seg.appendChild(b);
   });
-  $('#partyMinus').addEventListener('click', () => { party = Math.max(1, party - 1); store.set('party', party); renderTreasury(); });
-  $('#partyPlus').addEventListener('click', () => { party = Math.min(20, party + 1); store.set('party', party); renderTreasury(); });
+  const st2 = $('#subwayToggle'); st2.checked = useSubway;
+  st2.addEventListener('change', () => { useSubway = st2.checked; store.set('subway', useSubway); renderTreasury(); });
   const pt = $('#passToggle'); pt.checked = usePass;
   pt.addEventListener('change', () => { usePass = pt.checked; store.set('pass', usePass); renderTreasury(); });
   const io = new IntersectionObserver((ents) => { if (ents[0].isIntersecting) { treasuryShown = true; renderTreasury(); io.disconnect(); } }, { threshold: 0.2 });
@@ -695,3 +750,5 @@ let byCatLive = {}, totalLive = 1;
 renderTreasury();
 select(0, { scrollChip: false });
 observeReveal();
+votes.subscribe(() => { renderParty(); renderStays(); renderTreasury(); });
+votes.init();

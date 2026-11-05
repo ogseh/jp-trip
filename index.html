@@ -104,7 +104,11 @@
     <div class="section__head reveal">
       <span class="section__num">03</span>
       <h2><span class="jp">宿と移動</span><span class="en">Stages</span></h2>
-      <p>Where we sleep and how we get there, city by city.</p>
+      <p>Where we sleep and how we get there. Stamp the stays you like: tap your seal on an option. One stamp per person per city.</p>
+    </div>
+    <div class="party window" id="partyBar">
+      <div class="party__head"><h3>The party</h3><span class="party__sync" id="voteSync">Loading votes…</span></div>
+      <div class="party__names" id="partyNames"></div>
     </div>
     <div class="stages" id="stageList"></div>
   </section>
@@ -126,19 +130,11 @@
     <div class="section__head reveal">
       <span class="section__num">05</span>
       <h2><span class="jp">金庫</span><span class="en">Treasury</span></h2>
-      <p>Estimated costs per person, excluding international flights. Edit in <code>js/data.js</code>.</p>
+      <p>Accommodation and transport per person for the four of us, excluding international flights. Food and activities aren’t included. Stays use each city’s top-voted option.</p>
     </div>
 
     <div class="treasury">
       <div class="window controls">
-        <label class="ctl">
-          <span>Party size</span>
-          <span class="stepper">
-            <button type="button" id="partyMinus" aria-label="Fewer travellers">−</button>
-            <output id="partySize">4</output>
-            <button type="button" id="partyPlus" aria-label="More travellers">+</button>
-          </span>
-        </label>
         <div class="ctl">
           <span>Currency</span>
           <div class="seg" id="currencySeg" role="radiogroup" aria-label="Currency"></div>
@@ -148,6 +144,11 @@
           <span class="switch" aria-hidden="true"></span>
           <span>Use Kansai Wide Area Pass<small id="passNote"></small></span>
         </label>
+        <label class="ctl ctl--toggle">
+          <input type="checkbox" id="subwayToggle" />
+          <span class="switch" aria-hidden="true"></span>
+          <span>Use Tokyo Subway Ticket (72 h)<small id="subwayNote"></small></span>
+        </label>
       </div>
 
       <div class="window totals">
@@ -156,7 +157,7 @@
           <span class="value" id="totalPP">—</span>
         </div>
         <div class="total-big total-big--sub">
-          <span class="label">Whole party</span>
+          <span class="label">All four of us</span>
           <span class="value" id="totalGroup">—</span>
         </div>
         <div class="total-big total-big--sub">
@@ -172,6 +173,11 @@
         <h3>By city</h3>
         <div class="citybars" id="cityBars"></div>
         <div class="tooltip" id="tooltip" role="status"></div>
+      </div>
+
+      <div class="window savers">
+        <h3>Ways to save</h3>
+        <ul class="savers__list" id="saverList"></ul>
       </div>
 
       <details class="window ledger">
